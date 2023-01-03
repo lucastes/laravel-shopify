@@ -38,7 +38,8 @@ class GetPlanUrlTest extends TestCase
         $result = call_user_func(
             $this->action,
             $shop->getId(),
-            NullablePlanId::fromNative(null)
+            NullablePlanId::fromNative(null),
+            base64_encode($shop->getDomain()->toNative().'/admin')
         );
 
         $this->assertNotEmpty($result);
@@ -59,7 +60,8 @@ class GetPlanUrlTest extends TestCase
         $result = call_user_func(
             $this->action,
             $shop->getId(),
-            NullablePlanId::fromNative(null)
+            NullablePlanId::fromNative(null),
+            base64_encode($shop->getDomain()->toNative().'/admin')
         );
 
         $this->assertNotEmpty($result);
