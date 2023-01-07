@@ -113,6 +113,7 @@ trait AuthController
             [
                 'shopDomain' => $shopDomain->toNative(),
                 'target' => $cleanTarget,
+                'host' => $request->host,
             ]
         );
     }
