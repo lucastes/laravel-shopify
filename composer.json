@@ -1,5 +1,6 @@
 {
-    "name": "kyon147/laravel-shopify",
+    "name": "lucastes/laravel-shopify",
+    "version": "17.3.5",
     "description": "Shopify package for Laravel to aide in app development",
     "keywords": [
         "api",
