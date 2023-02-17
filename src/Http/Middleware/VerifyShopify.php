@@ -102,11 +102,9 @@ class VerifyShopify
         }
 
         if (!Util::useNativeAppBridge()) {
-            $shop = $this->getShopIfAlreadyInstalled($request);
-            $storeResult = !$this->isApiRequest($request) && $shop;
+            $storeResult = !$this->isApiRequest($request) && $this->checkPreviousInstallation($request);
 
             if ($storeResult) {
-                $this->loginFromShop($shop);
                 return $next($request);
             }
         }
@@ -207,7 +205,7 @@ class VerifyShopify
             throw new HttpException('Shop is not installed or missing data.', Response::HTTP_FORBIDDEN);
         }
 
-        return $this->installRedirect($request);
+        return $this->installRedirect(ShopDomain::fromRequest($request));
     }
 
     /**
@@ -303,7 +301,7 @@ class VerifyShopify
             [
                 'shop' => ShopDomain::fromRequest($request)->toNative(),
                 'target' => $target,
-                'host' => $request->host,
+                'host' => $request->get('host'),
             ]
         );
     }
@@ -315,14 +313,11 @@ class VerifyShopify
      *
      * @return RedirectResponse
      */
-    protected function installRedirect(Request $request): RedirectResponse
+    protected function installRedirect(ShopDomainValue $shopDomain): RedirectResponse
     {
         return Redirect::route(
             Util::getShopifyConfig('route_names.authenticate'),
-            [
-                'shop' =>ShopDomain::fromRequest($request)->toNative(),
-                'host' => $request->host,
-            ]
+            ['shop' => $shopDomain->toNative()]
         );
     }
 
@@ -516,36 +511,5 @@ class VerifyShopify
         $shop = $this->shopQuery->getByDomain(ShopDomain::fromRequest($request), [], true);
 
         return $shop && $shop->password && ! $shop->trashed();
-    }
-
-    /**
-     * Get shop model if there is a store record in the database.
-     *
-     * @param Request $request The request object.
-     *
-     * @return ?ShopModel
-     */
-    protected function getShopIfAlreadyInstalled(Request $request): ?ShopModel
-    {
-        $shop = $this->shopQuery->getByDomain(ShopDomain::fromRequest($request), [], true);
-
-        return $shop && $shop->password && ! $shop->trashed() ? $shop : null;
-    }
-
-    /**
-     * Login and validate store
-     *
-     * @param ShopModel $shop
-     * @return void
-     */
-    protected function loginFromShop(ShopModel $shop): void
-    {
-        // Override auth guard
-        if (($guard = Util::getShopifyConfig('shop_auth_guard'))) {
-            $this->auth->setDefaultDriver($guard);
-        }
-
-        // All is well, login the shop
-        $this->auth->login($shop);
     }
 }

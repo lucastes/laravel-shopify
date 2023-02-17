@@ -44,10 +44,7 @@ class BillingControllerTest extends TestCase
         factory(Util::getShopifyConfig('models.plan', Plan::class))->states('type_recurring', 'installable')->create();
 
         // Run the call
-        $response = $this->call('get', '/billing', [
-            'shop' => $shop->getDomain()->toNative(),
-            'host' => base64_encode($shop->getDomain()->toNative().'/admin'),
-        ]);
+        $response = $this->call('get', '/billing', ['shop' => $shop->getDomain()->toNative()]);
         $response->assertViewHas(
             'url',
             'https://example.myshopify.com/admin/charges/1029266947/confirm_recurring_application_charge?signature=BAhpBANeWT0%3D--64de8739eb1e63a8f848382bb757b20343eb414f'
@@ -67,7 +64,7 @@ class BillingControllerTest extends TestCase
         // Create the shop and log them in
         $shop = factory($this->model)->create();
         $this->auth->login($shop);
-
+        $hostValue = base64_encode($shop->getDomain()->toNative().'/admin');
         // Make the plan
         $plan = factory(Util::getShopifyConfig('models.plan', Plan::class))->states('type_recurring')->create();
 
@@ -78,16 +75,17 @@ class BillingControllerTest extends TestCase
             [
                 'charge_id' => 1,
                 'shop' => $shop->getDomain()->toNative(),
+                'host' => $hostValue,
             ]
         );
 
         // Refresh the model
         $shop->refresh();
 
-        $hostValue = urlencode(base64_encode($shop->getDomain()->toNative().'/admin'));
+
         // Assert we've redirected and shop has been updated
         $response->assertRedirect();
-        $this->assertTrue(Str::contains($response->headers->get('Location'), '&host='.$hostValue));
+        $this->assertTrue(Str::contains($response->headers->get('Location'), '&host='.urlencode($hostValue)));
         $this->assertTrue(Str::contains($response->headers->get('Location'), '&billing=success'));
         $this->assertNotNull($shop->plan);
     }
@@ -108,7 +106,7 @@ class BillingControllerTest extends TestCase
 
         // Make the plan
         $plan = factory(Util::getShopifyConfig('models.plan', Plan::class))->states('type_recurring')->create();
-
+        $hostValue = urlencode(base64_encode($shop->getDomain()->toNative().'/admin'));
         // Run the call
         $response = $this->call(
             'get',
@@ -116,17 +114,16 @@ class BillingControllerTest extends TestCase
             [
                 'charge_id' => 1,
                 'shop' => $shop->getDomain()->toNative(),
-                'host' => urlencode(base64_encode($shop->getDomain()->toNative().'/admin')),
+                'host' => $hostValue,
             ]
         );
 
         // Refresh the model
         $shop->refresh();
 
-        $hostValue = urlencode(base64_encode($shop->getDomain()->toNative().'/admin'));
         // Assert we've redirected and shop has been updated
         $response->assertRedirect();
-        $this->assertFalse(Str::contains($response->headers->get('Location'), '&host='.$hostValue));
+        $this->assertTrue(Str::contains($response->headers->get('Location'), '&host='.$hostValue));
         $this->assertFalse(Str::contains($response->headers->get('Location'), '&billing=success'));
         $this->assertNotNull($shop->plan);
     }
@@ -188,18 +185,18 @@ class BillingControllerTest extends TestCase
         ]);
         //Log in
         $this->auth->login($shop);
-        $url = 'https://example-app.com/billing/process/9999?shop='.$shop->name;
+        $hostValue = urlencode(base64_encode($shop->getDomain()->toNative().'/admin'));
+        $url = 'https://example-app.com/billing/process/9999?shop='.$shop->name.'&host='.$hostValue;
         // Try to go to bill without a charge id which happens when you cancel the charge
         $response = $this->call(
             'get',
             $url,
             [
                 'shop' => $shop->name,
-                'host' => base64_encode($shop->getDomain()->toNative().'/admin'),
+                'host' => $hostValue,
             ]
         );
         //Confirm we get sent back to the homepage of the app
-        $hostValue = urlencode(base64_encode($shop->getDomain()->toNative().'/admin'));
         $response->assertRedirect('https://example-app.com?shop='.$shop->name.'&host='.$hostValue);
     }
 

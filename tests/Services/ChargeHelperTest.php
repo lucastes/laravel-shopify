@@ -2,6 +2,7 @@
 
 namespace Osiset\ShopifyApp\Test\Services;
 
+use Illuminate\Support\Str;
 use Osiset\BasicShopifyAPI\ResponseAccess;
 use Osiset\ShopifyApp\Objects\Enums\ChargeStatus;
 use Osiset\ShopifyApp\Objects\Transfers\PlanDetails;
@@ -136,13 +137,19 @@ class ChargeHelperTest extends TestCase
     {
         // Seed (trial)
         $seed = $this->seedData();
-        $result = $this->chargeHelper->details($seed['plan'], $seed['shop'], $seed['host']);
+        $hostValue = base64_encode('cool-shop-example.myshopify.com/admin');
+        $result = $this->chargeHelper->details($seed['plan'], $seed['shop'], $hostValue);
         $this->assertInstanceOf(PlanDetails::class, $result);
+        $this->assertTrue(Str::contains($result->returnUrl, '&host='.urlencode($hostValue)));
+
+
 
         // Seed (no trial)
+        $hostValue = base64_encode('example.myshopify.com/admin');
         $seed = $this->seedData([], ['trial_days' => 0]);
-        $result = $this->chargeHelper->details($seed['plan'], $seed['shop'], $seed['host']);
+        $result = $this->chargeHelper->details($seed['plan'], $seed['shop'], $hostValue);
         $this->assertInstanceOf(PlanDetails::class, $result);
+        $this->assertTrue(Str::contains($result->returnUrl, '&host='.urlencode($hostValue)));
     }
 
     public function testDetails2(): void
@@ -156,11 +163,10 @@ class ChargeHelperTest extends TestCase
         $shop = factory($this->model)->create([
             'plan_id' => $plan->getId()->toNative(),
         ]);
-
-        $host = base64_encode($shop->getDomain()->toNative().'/admin');
-
-        $result = $this->chargeHelper->details($plan, $shop, $host);
+        $hostValue = base64_encode($shop->getDomain()->toNative().'/admin');
+        $result = $this->chargeHelper->details($plan, $shop, $hostValue);
         $this->assertInstanceOf(PlanDetails::class, $result);
+        $this->assertTrue(Str::contains($result->returnUrl, '&host='.urlencode($hostValue)));
     }
 
     protected function seedData($extraCharge = [], $extraPlan = [], $type = 'onetime'): array
@@ -190,13 +196,10 @@ class ChargeHelperTest extends TestCase
             )
         );
 
-        $host = base64_encode($shop->getDomain()->toNative().'/admin');
-
         return [
             'plan' => $plan,
             'shop' => $shop,
             'charge' => $charge,
-            'host' => $host,
         ];
     }
 }

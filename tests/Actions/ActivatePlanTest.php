@@ -14,7 +14,7 @@ use Osiset\ShopifyApp\Util;
 class ActivatePlanTest extends TestCase
 {
     /**
-     * @var \Osiset\ShopifyApp\Actions\ActivatePlan
+     * @var ActivatePlan
      */
     protected $action;
 
@@ -41,7 +41,7 @@ class ActivatePlanTest extends TestCase
             'plan_id' => $plan->getId()->toNative(),
             'user_id' => $shop->getId()->toNative(),
         ]);
-
+        $hostValue = urlencode(base64_encode($shop->getDomain()->toNative().'/admin'));
         // Setup API stub
         $this->setApiStub();
         ApiStub::stubResponses(['post_recurring_application_charges']);
@@ -52,7 +52,7 @@ class ActivatePlanTest extends TestCase
             $shop->getId(),
             $plan->getId(),
             ChargeReference::fromNative(12345),
-            base64_encode($shop->getDomain()->toNative().'/admin')
+            $hostValue
         );
 
         $this->assertInstanceOf(ChargeId::class, $result);
@@ -74,7 +74,7 @@ class ActivatePlanTest extends TestCase
             'plan_id' => $plan->getId()->toNative(),
             'user_id' => $shop->getId()->toNative(),
         ]);
-
+        $hostValue = urlencode(base64_encode($shop->getDomain()->toNative().'/admin'));
         // Setup API stub
         $this->setApiStub();
         ApiStub::stubResponses(['post_application_charges']);
@@ -85,9 +85,11 @@ class ActivatePlanTest extends TestCase
             $shop->getId(),
             $plan->getId(),
             ChargeReference::fromNative(12345),
-            base64_encode($shop->getDomain()->toNative().'/admin')
+            $hostValue
         );
 
         $this->assertInstanceOf(ChargeId::class, $result);
     }
+
+    //TODO we need to test for both myshopify and admin hosts
 }

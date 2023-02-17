@@ -30,7 +30,7 @@ class GetPlanUrlTest extends TestCase
 
         // Create the shop with no plan
         $shop = factory($this->model)->create();
-
+        $hostValue = base64_encode($shop->getDomain()->toNative().'/admin');
         // Setup API stub
         $this->setApiStub();
         ApiStub::stubResponses(['post_recurring_application_charges']);
@@ -39,7 +39,7 @@ class GetPlanUrlTest extends TestCase
             $this->action,
             $shop->getId(),
             NullablePlanId::fromNative(null),
-            base64_encode($shop->getDomain()->toNative().'/admin')
+            $hostValue
         );
 
         $this->assertNotEmpty($result);
@@ -52,7 +52,7 @@ class GetPlanUrlTest extends TestCase
 
         // Create the shop with no plan
         $shop = factory($this->model)->create();
-
+        $hostValue = base64_encode($shop->getDomain()->toNative().'/admin');
         // Setup API stub
         $this->setApiStub();
         ApiStub::stubResponses(['graphql_app_subscription_create']);
@@ -61,7 +61,7 @@ class GetPlanUrlTest extends TestCase
             $this->action,
             $shop->getId(),
             NullablePlanId::fromNative(null),
-            base64_encode($shop->getDomain()->toNative().'/admin')
+            $hostValue
         );
 
         $this->assertNotEmpty($result);

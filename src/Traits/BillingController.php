@@ -45,18 +45,23 @@ trait BillingController
     ): ViewView {
         // Get the shop
         $shop = $shopQuery->getByDomain(ShopDomain::fromNative($request->get('shop')));
+        $host = urldecode($request->get('host'));
 
         // Get the plan URL for redirect
         $url = $getPlanUrl(
             $shop->getId(),
             NullablePlanId::fromNative($plan),
-            $request->host
+            $host
         );
 
         // Do a fullpage redirect
         return View::make(
             'shopify-app::billing.fullpage_redirect',
-            ['url' => $url]
+            [
+                'url' => $url,
+                'host' => $host,
+                'apiKey' => Util::getShopifyConfig('api_key', ShopDomain::fromNative($request->get('shop'))),
+            ]
         );
     }
 
@@ -78,10 +83,12 @@ trait BillingController
     ): RedirectResponse {
         // Get the shop
         $shop = $shopQuery->getByDomain(ShopDomain::fromNative($request->query('shop')));
+        // If we have the host we need to pass it along.
+        $host = urldecode($request->get('host'));
         if (!$request->has('charge_id')) {
             return Redirect::route(Util::getShopifyConfig('route_names.home'), [
                 'shop' => $shop->getDomain()->toNative(),
-                'host' => $request->host ? $request->host : base64_encode($shop->getDomain()->toNative().'/admin'),
+                'host' => $host,
             ]);
         }
         // Activate the plan and save
@@ -89,20 +96,20 @@ trait BillingController
             $shop->getId(),
             PlanId::fromNative($plan),
             ChargeReference::fromNative((int) $request->query('charge_id')),
-            $request->host ? $request->host : base64_encode($shop->getDomain()->toNative().'/admin')
+            $host
         );
 
         // Go to homepage of app
-        return Redirect::route(Util::getShopifyConfig('route_names.home'), array_merge([
-            'shop' => $shop->getDomain()->toNative(),
-        ], Util::useNativeAppBridge() ? [] : [
-            'host' => base64_encode($shop->getDomain()->toNative().'/admin'),
-        ], Util::useNativeAppBridge() ? [
-            'host' => $request->host ? $request->host : base64_encode($shop->getDomain()->toNative().'/admin')
-        ] : [
-            'host' => $request->host ? $request->host : base64_encode($shop->getDomain()->toNative().'/admin'),
-            'billing' => $result ? 'success' : 'failure',
-        ]))->with(
+        return Redirect::route(
+            Util::getShopifyConfig('route_names.home'),
+            array_merge([
+                'shop' => $shop->getDomain()->toNative(),
+                'host' => $host,
+            ], Util::useNativeAppBridge() ? [] : [
+                'host' => $host,
+                'billing' => $result ? 'success' : 'failure',
+            ])
+        )->with(
             $result ? 'success' : 'failure',
             'billing'
         );
